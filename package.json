@@ -1,0 +1,10 @@
+{
+  "name": "lucky-fortune-casino",
+  "version": "1.0.0",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "backend": "cd backend && node server.js",
+    "frontend": "cd frontend && npm run dev",
+    "dev": "npm run backend & npm run frontend"
+  }
+}

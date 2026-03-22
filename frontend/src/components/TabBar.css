@@ -1,0 +1,65 @@
+.tabbar {
+  background: rgba(4,12,4,.97);
+  border-top: 1.5px solid rgba(255,215,0,.18);
+  display: flex;
+  padding: 6px 4px env(safe-area-inset-bottom, 6px);
+  flex-shrink: 0;
+  z-index: 100;
+}
+.tabbar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 4px;
+  cursor: pointer;
+  transition: all 0.25s;
+  gap: 4px;
+  border-radius: 14px;
+  margin: 0 2px;
+  border: 1.5px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.tabbar-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,215,0,0), rgba(255,215,0,0));
+  transition: all 0.25s;
+  border-radius: 12px;
+}
+.tabbar-item:hover::before {
+  background: linear-gradient(135deg, rgba(255,215,0,.08), rgba(255,165,0,.05));
+}
+.tabbar-item:hover {
+  border-color: rgba(255,215,0,.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255,215,0,.15);
+}
+.tabbar-item.active {
+  background: linear-gradient(135deg, rgba(255,215,0,.12), rgba(255,165,0,.07));
+  border-color: rgba(255,215,0,.35);
+  box-shadow: 0 4px 20px rgba(255,215,0,.2);
+}
+.tabbar-icon {
+  font-size: 20px;
+  transition: transform 0.25s;
+  position: relative;
+  z-index: 1;
+}
+.tabbar-item:hover .tabbar-icon { transform: scale(1.2) translateY(-1px); }
+.tabbar-item.active .tabbar-icon { transform: scale(1.18); filter: drop-shadow(0 0 6px rgba(255,215,0,.6)); }
+.tabbar-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #777;
+  transition: color 0.25s;
+  position: relative;
+  z-index: 1;
+}
+.tabbar-item:hover .tabbar-label { color: rgba(255,215,0,.8); }
+.tabbar-item.active .tabbar-label { color: var(--gold); }

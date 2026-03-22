@@ -1,0 +1,19 @@
+.jp-pool { background:linear-gradient(135deg,#1a0500,#3a0a00); border:2px solid var(--gold); border-radius:18px; padding:18px; text-align:center; margin-bottom:12px; }
+.jp-pool-amt { font-family:'Orbitron',sans-serif; font-size:30px; font-weight:900; color:var(--gold); animation:npulse 1.2s infinite alternate; }
+.lotto-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:10px; }
+.lotto-n { aspect-ratio:1; border-radius:50%; border:1.5px solid rgba(255,215,0,.18); background:rgba(255,255,255,.04); cursor:pointer; font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:all .25s; color:#ccc; }
+.lotto-n:hover { background:rgba(255,215,0,.1); border-color:var(--gold); color:var(--gold); }
+.lotto-n.sel { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#000; border-color:transparent; transform:scale(1.1); }
+.lotto-n.win { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.3); }
+.lotto-n.match { background:linear-gradient(135deg,#00cc44,#00ff55); color:#000; border-color:transparent; animation:matchPop .4s ease; }
+@keyframes matchPop { 0%{transform:scale(1)} 50%{transform:scale(1.3)} 100%{transform:scale(1)} }
+.sel-balls { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:10px; }
+.sel-ball { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#000; font-size:10px; font-weight:900; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; }
+.sel-ball-empty { width:32px; height:32px; border-radius:50%; border:2px dashed rgba(255,215,0,.25); display:flex; align-items:center; justify-content:center; font-size:12px; color:rgba(255,215,0,.3); }
+.draw-btn { width:100%; padding:14px; background:linear-gradient(135deg,#8b0000,#cc0000,#ff2244); border:none; border-radius:14px; color:#fff; font-family:'Orbitron',sans-serif; font-size:14px; font-weight:900; cursor:pointer; transition:all .3s; letter-spacing:2px; margin-bottom:10px; }
+.draw-btn:disabled { opacity:.5; cursor:not-allowed; }
+.draw-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 20px rgba(255,34,68,.4); }
+.jp-result { padding:14px; border-radius:14px; text-align:center; font-size:13px; font-weight:700; margin-bottom:10px; line-height:1.7; }
+.jp-result.win { background:rgba(0,204,68,.1); border:1.5px solid rgba(0,204,68,.3); color:var(--green); }
+.jp-result.lose { background:rgba(255,34,68,.07); border:1.5px solid rgba(255,34,68,.2); color:var(--red); }
+@keyframes npulse { 0%{filter:drop-shadow(0 0 8px rgba(255,215,0,.5))} 100%{filter:drop-shadow(0 0 28px rgba(255,215,0,1))} }

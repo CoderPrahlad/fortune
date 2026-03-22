@@ -1,0 +1,61 @@
+.wingo-hdr { background:linear-gradient(135deg,#0a1a2e,#0d2040); border:1.5px solid rgba(0,229,204,.25); border-radius:18px; padding:14px; text-align:center; margin-bottom:10px; }
+.period-num { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; color:var(--teal); letter-spacing:2px; margin:4px 0 10px; }
+.wingo-cd { display:flex; align-items:center; justify-content:center; gap:8px; }
+.cd-box { background:rgba(0,0,0,.4); border:1.5px solid rgba(0,229,204,.3); border-radius:12px; padding:8px 16px; text-align:center; min-width:60px; }
+.cd-num { font-family:'Orbitron',sans-serif; font-size:28px; font-weight:900; color:#fff; }
+.cd-lbl { font-size:8px; color:#aaa; letter-spacing:2px; margin-top:2px; }
+.cd-sep { font-family:'Orbitron',sans-serif; font-size:28px; font-weight:900; color:var(--teal); animation:sepBlink 1s ease-in-out infinite; }
+@keyframes sepBlink { 0%,100%{opacity:1} 50%{opacity:.2} }
+.wsec-lbl { font-size:9px; color:var(--gold); letter-spacing:3px; font-weight:700; margin-bottom:8px; text-align:center; }
+.wcolor-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; margin-bottom:9px; }
+.wcolor-btn { border:none; border-radius:14px; padding:12px 8px; cursor:pointer; text-align:center; transition:all .3s; }
+.wcolor-btn .ce { font-size:20px; display:block; margin-bottom:3px; }
+.wcolor-btn .cn { font-weight:900; font-size:12px; display:block; color:#fff; }
+.wcolor-btn .cm { font-size:9px; opacity:.8; display:block; margin-top:2px; color:#fff; }
+.wcolor-btn.red-btn { background:linear-gradient(135deg,#8b0000,#ff2244); }
+.wcolor-btn.green-btn { background:linear-gradient(135deg,#004400,#00aa33); }
+.wcolor-btn.violet-btn { background:linear-gradient(135deg,#330066,#9900cc); }
+.wcolor-btn:hover,.wcolor-btn.sel { outline:3px solid var(--gold); transform:scale(1.05); }
+.wsize-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:9px; }
+.wsize-btn { border:none; border-radius:14px; padding:12px 8px; cursor:pointer; text-align:center; transition:all .3s; }
+.wsize-btn .se { font-size:20px; display:block; margin-bottom:3px; }
+.wsize-btn .sn { font-weight:900; font-size:13px; display:block; color:#fff; }
+.wsize-btn .sm { font-size:9px; opacity:.8; display:block; margin-top:2px; color:#fff; }
+.wsize-btn.small-btn { background:linear-gradient(135deg,#002244,#0044bb); }
+.wsize-btn.big-btn { background:linear-gradient(135deg,#442200,#bb4400); }
+.wsize-btn:hover,.wsize-btn.sel { outline:3px solid var(--gold); transform:scale(1.05); }
+.wnum-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:5px; }
+.wnum-btn { aspect-ratio:1; border-radius:9px; border:2px solid rgba(255,255,255,.1); cursor:pointer; font-family:'Orbitron',sans-serif; font-size:13px; font-weight:900; transition:all .3s; display:flex; align-items:center; justify-content:center; color:#fff; }
+.wnum-btn:hover,.wnum-btn.sel { border-color:var(--gold); box-shadow:0 0 18px rgba(255,215,0,.5); transform:scale(1.12); }
+.wsel-info { font-size:11px; color:#ccc; margin-bottom:9px; text-align:center; line-height:1.7; }
+.place-btn { width:100%; padding:13px; background:linear-gradient(135deg,#7700ff,#9900cc); border:none; border-radius:13px; color:#fff; font-family:'Orbitron',sans-serif; font-size:12px; font-weight:900; cursor:pointer; transition:all .3s; letter-spacing:2px; }
+.place-btn:disabled { opacity:.5; cursor:not-allowed; }
+.hist-row { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.hist-row::-webkit-scrollbar { display:none; }
+.hball { flex-shrink:0; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; flex-direction:column; gap:1px; }
+.hball .hn { font-size:12px; }
+.hball .hs { font-size:7px; opacity:.85; }
+.hball.red { background:linear-gradient(135deg,#cc0022,#ff2244); }
+.hball.green { background:linear-gradient(135deg,#006622,#00aa33); }
+.hball.violet { background:linear-gradient(135deg,#660099,#9900cc); }
+
+/* LAST RESULT */
+.wingo-last-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+.wingo-result-ball {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron',sans-serif;
+  font-size: 14px; font-weight: 900; color: #fff;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  flex-shrink: 0;
+}

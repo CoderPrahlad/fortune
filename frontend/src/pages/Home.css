@@ -1,0 +1,129 @@
+/* JACKPOT BANNER */
+.jp-banner {
+  background: linear-gradient(135deg,#1a0500,#3d0a00,#1a0500);
+  border: 2px solid var(--gold2);
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.jp-banner::before {
+  content:'';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,165,0,.12), transparent 70%);
+  animation: jglow 2s ease-in-out infinite alternate;
+}
+@keyframes jglow { 0%{opacity:.4} 100%{opacity:1} }
+.jp-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 10px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.jp-amount {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(24px,6vw,36px);
+  font-weight: 900;
+  background: linear-gradient(135deg,var(--gold),#fff,var(--gold2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: npulse 1.2s ease-in-out infinite alternate;
+  position: relative;
+}
+@keyframes npulse { 0%{filter:drop-shadow(0 0 8px rgba(255,215,0,.5))} 100%{filter:drop-shadow(0 0 28px rgba(255,215,0,1))} }
+.jp-sub { font-size: 10px; color: rgba(255,215,0,.8); position: relative; }
+
+/* DAILY BONUS */
+.daily-box {
+  background: linear-gradient(135deg,#001828,#002a45);
+  border: 1.5px solid var(--teal);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.daily-left { display: flex; align-items: center; gap: 10px; }
+.daily-title { font-size: 13px; font-weight: 700; color: var(--teal); }
+.daily-sub { font-size: 10px; color: #aaa; margin-top: 2px; }
+.daily-claim-btn {
+  background: linear-gradient(135deg, var(--teal), #00b3a0);
+  color: #000;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.daily-claim-btn:hover { transform: scale(1.05); }
+.daily-claim-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+/* BALANCE ROW */
+.home-bal-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.home-bal-box {
+  background: rgba(255,255,255,.04);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+}
+
+/* GAMES SECTION */
+.home-games-label {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.home-game-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.game-card {
+  background: linear-gradient(135deg,rgba(15,30,15,.95),rgba(8,18,8,.98));
+  border: 1.5px solid rgba(255,215,0,.15);
+  border-radius: 18px;
+  padding: 16px 12px 14px;
+  cursor: pointer;
+  transition: all .3s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.game-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 28px rgba(255,215,0,.18); }
+.game-card.disabled { opacity: .5; cursor: default; filter: grayscale(.6); }
+.game-card:nth-child(5) { grid-column: 1 / -1; }
+.game-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 8px;
+  letter-spacing: .5px;
+  font-family: 'Orbitron', sans-serif;
+}
+.gc-icon { font-size: 38px; margin: 6px 0 8px; display: block; }
+.gc-name { font-size: 12px; font-weight: 700; margin-bottom: 4px; letter-spacing: .5px; }
+.gc-desc { font-size: 10px; color: #aaa; margin-bottom: 5px; }
+.gc-rate { font-size: 10px; font-weight: 700; }

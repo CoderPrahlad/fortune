@@ -1,0 +1,73 @@
+/* FILTER BUTTONS */
+.gh-filter-btn {
+  padding: 6px 14px;
+  border: 1.5px solid rgba(255,215,0,.2);
+  background: rgba(255,255,255,.04);
+  border-radius: 20px;
+  color: #bbb;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .25s;
+  letter-spacing: .5px;
+  flex-shrink: 0;
+}
+.gh-filter-btn.active {
+  background: linear-gradient(135deg,rgba(255,215,0,.18),rgba(255,180,0,.1));
+  border-color: var(--gold);
+  color: var(--gold);
+  box-shadow: 0 0 10px rgba(255,215,0,.2);
+}
+
+/* HISTORY CARD */
+.gh-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+  border-left: 3px solid var(--green);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  transition: all .2s;
+}
+.gh-card:hover { background: rgba(255,255,255,.05); }
+.gh-card-left { display: flex; align-items: flex-start; gap: 12px; flex: 1; }
+.gh-icon-wrap {
+  width: 46px; height: 46px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.gh-game-name { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 3px; }
+.gh-bet-line { font-size: 11px; color: #ccc; margin-bottom: 2px; }
+.gh-date { font-size: 9px; color: #888; margin-bottom: 3px; }
+.gh-result-text {
+  font-size: 9px; color: #666;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* RIGHT SIDE */
+.gh-card-right { text-align: right; flex-shrink: 0; }
+.gh-net { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+.gh-net.win { color: var(--green); }
+.gh-net.loss { color: var(--red); }
+.gh-payout { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
+.gh-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 1px;
+}
+.gh-badge.win { background: rgba(0,204,68,.15); color: var(--green); border: 1px solid rgba(0,204,68,.3); }
+.gh-badge.loss { background: rgba(255,34,68,.1); color: var(--red); border: 1px solid rgba(255,34,68,.2); }
