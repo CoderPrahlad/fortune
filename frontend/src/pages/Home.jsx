@@ -93,6 +93,24 @@ export default function Home({ onDepositClick }) {
           );
         })}
       </div>
+
+      {/* SEO Content Block */}
+      <div className="seo-content" style={{ padding: '20px', color: '#888', fontSize: '11px', textAlign: 'center', background: '#1a1a1a', margin: '30px 15px', borderRadius: '8px', border: '1px solid #333' }}>
+        <h2 style={{ fontSize: '14px', color: '#ccc', marginBottom: '8px' }}>Best Online Casino & Color Prediction Game in India</h2>
+        <p style={{ marginBottom: '8px', lineHeight: '1.4' }}>
+          Welcome to <strong>Lucky Fortune Casino</strong>, India's most trusted and exciting online gaming platform. 
+          Play top-rated games like <strong>Aviator</strong>, <strong>Wingo (Color Prediction)</strong>, Slots, and Daily Jackpot. 
+          Experience fair gameplay with instant <strong>UPI and Bank withdrawals</strong>. 
+        </p>
+        <p style={{ marginBottom: '10px', lineHeight: '1.4' }}>
+          Whether you are a beginner or a pro, Lucky Fortune gives you the best chance to play and win real cash daily. 
+          Join the community of winners today! As featured on the <strong>prahlad Hacker</strong> gaming channel.
+        </p>
+        <p style={{ marginTop: '10px', fontSize: '9px', color: '#555' }}>
+          Keywords: Aviator Game, Color Prediction, Wingo Winning Tricks, Instant Withdrawal Casino, Earn Money Online.
+        </p>
+      </div>
+
     </div>
   );
 }

@@ -10,7 +10,7 @@ export default function Aviator() {
   const { applyCoins, gameSettings } = useAuth();
   const { showToast, showModal, confetti } = useUI();
   const canvasRef = useRef(null);
-  const avRef = useRef({ flying:false, crashed:false, sessionId:null, crashAt:1, bet:50, mult:1, cashed:false, startTime:0, rafId:null, graphPoints:[] });
+  const avRef = useRef({ flying:false, crashed:false, sessionId:null, crashAt:1, bet:50, mult:1, cashed:false, startTime:0, rafId:null, graphPoints:[], flyAwayProgress: 0 });
   const [bet, setBet] = useState(50);
   const [autoCash, setAutoCash] = useState('');
   const [autoOn, setAutoOn] = useState(false);
@@ -39,7 +39,7 @@ export default function Aviator() {
     const wrap = canvas.parentElement;
     if (!wrap?.offsetWidth) { setTimeout(initCanvas, 150); return; }
     canvas.width = wrap.offsetWidth;
-    canvas.height = 200;
+    canvas.height = 250; // Thodi height badha di realistic feel ke liye
     drawIdle(canvas);
   };
 
@@ -49,155 +49,181 @@ export default function Aviator() {
       setHistPills(d.history.slice(0,8).map(v => ({ v, c: v<2?'low':v<5?'mid':v<20?'high':'mega' })));
   };
 
-  const drawGrid = (ctx, W, H) => {
-    ctx.strokeStyle = 'rgba(100,80,255,0.07)'; ctx.lineWidth = 1;
-    for (let i=0;i<=5;i++) {
-      const y=(H/5)*i; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
-      const x=(W/5)*i; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke();
+  // ✅ REALISTIC MOVING GRID
+  const drawGrid = (ctx, W, H, elapsed = 0) => {
+    ctx.fillStyle = '#0a0a0a'; // Dark background
+    ctx.fillRect(0, 0, W, H);
+    
+    const speedX = 40; 
+    const speedY = 15;
+    const offsetX = (elapsed * speedX) % (W/6);
+    const offsetY = (elapsed * speedY) % (H/5);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; 
+    ctx.lineWidth = 1;
+    
+    // Vertical lines moving left
+    for (let x = -offsetX; x <= W; x += W/6) {
+      if(x < 0) continue;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
     }
-    ctx.strokeStyle='rgba(100,80,255,0.2)'; ctx.lineWidth=1.5;
-    ctx.beginPath(); ctx.moveTo(0,H-1); ctx.lineTo(W,H-1); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(1,0); ctx.lineTo(1,H); ctx.stroke();
+    // Horizontal lines moving down
+    for (let y = H + offsetY; y >= 0; y -= H/5) {
+      if(y > H) continue;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, H-2); ctx.lineTo(W, H-2); ctx.stroke(); // Bottom Axis
+    ctx.beginPath(); ctx.moveTo(2, 0); ctx.lineTo(2, H); ctx.stroke(); // Left Axis
   };
 
-  const drawPlane = (ctx, x, y, angle, crashed) => {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
-    if (crashed) {
-      ctx.font = '32px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.globalAlpha = 0.85; ctx.fillText('💥', 0, 0);
-    } else {
-      // Flame trail first (behind plane)
-      const flameColors = ['rgba(255,220,50,0.9)','rgba(255,130,20,0.75)','rgba(255,60,0,0.55)','rgba(180,30,0,0.3)'];
-      for (let i = 0; i < 5; i++) {
-        const fx = -22 - i * 9 + (Math.random()-0.5)*3;
-        const fy = (Math.random()-0.5)*5;
-        const r = Math.max(1, 5 - i * 0.8);
-        ctx.beginPath(); ctx.arc(fx, fy, r, 0, Math.PI*2);
-        ctx.fillStyle = flameColors[Math.min(i, 3)]; ctx.fill();
-      }
+  // ✅ CLASSIC RED PLANE DESIGN
+  const drawPlane = (ctx, x, y, angle) => {
+    ctx.save(); 
+    ctx.translate(x, y); 
+    ctx.rotate(angle);
 
-      // Plane shadow/glow
-      ctx.shadowColor = '#00ffaa'; ctx.shadowBlur = 16;
+    // Propeller blur
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(32, 0, 2, 8, 0, 0, Math.PI*2);
+    ctx.fill();
 
-      // Main fuselage
-      ctx.fillStyle = '#e8f4ff';
-      ctx.beginPath();
-      ctx.moveTo(26, 0);        // nose
-      ctx.bezierCurveTo(20,-5, 0,-6, -18,-4);
-      ctx.bezierCurveTo(-22,-3, -22,3, -18,4);
-      ctx.bezierCurveTo(0,6, 20,5, 26,0);
-      ctx.fill();
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 15;
 
-      // Cockpit window
-      ctx.fillStyle = '#88ccff';
-      ctx.beginPath();
-      ctx.ellipse(14, -1, 5, 3, -0.2, 0, Math.PI*2);
-      ctx.fill();
+    // Plane Body (Red)
+    ctx.fillStyle = '#e60026'; // Classic Aviator Red
+    ctx.beginPath();
+    ctx.moveTo(30, 0); 
+    ctx.bezierCurveTo(25,-6, 0,-8, -20,-4);
+    ctx.bezierCurveTo(-25,-2, -25,2, -20,4);
+    ctx.bezierCurveTo(0,8, 25,6, 30,0);
+    ctx.fill();
 
-      // Main wing
-      ctx.fillStyle = '#c8dff0';
-      ctx.beginPath();
-      ctx.moveTo(6, -4);
-      ctx.lineTo(2, -22);
-      ctx.lineTo(-6, -22);
-      ctx.lineTo(-4, -4);
-      ctx.closePath(); ctx.fill();
+    // Cockpit
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.ellipse(10, -3, 6, 2.5, -0.1, 0, Math.PI*2);
+    ctx.fill();
 
-      // Wing highlight
-      ctx.fillStyle = '#e0eefa';
-      ctx.beginPath();
-      ctx.moveTo(4, -4);
-      ctx.lineTo(1, -18);
-      ctx.lineTo(-2, -18);
-      ctx.lineTo(-2, -4);
-      ctx.closePath(); ctx.fill();
+    // Wing
+    ctx.fillStyle = '#b3001c'; // Darker red for wing
+    ctx.beginPath();
+    ctx.moveTo(5, -4);
+    ctx.lineTo(-5, -25);
+    ctx.lineTo(-12, -25);
+    ctx.lineTo(-5, -4);
+    ctx.closePath(); ctx.fill();
 
-      // Tail fin
-      ctx.fillStyle = '#c8dff0';
-      ctx.beginPath();
-      ctx.moveTo(-14, -4);
-      ctx.lineTo(-12, -14);
-      ctx.lineTo(-8, -14);
-      ctx.lineTo(-8, -4);
-      ctx.closePath(); ctx.fill();
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(-15, -4);
+    ctx.lineTo(-18, -15);
+    ctx.lineTo(-22, -15);
+    ctx.lineTo(-20, -4);
+    ctx.closePath(); ctx.fill();
 
-      // Small stabilizer
-      ctx.fillStyle = '#b8cfe0';
-      ctx.beginPath();
-      ctx.moveTo(-16, 4);
-      ctx.lineTo(-14, 10);
-      ctx.lineTo(-10, 10);
-      ctx.lineTo(-10, 4);
-      ctx.closePath(); ctx.fill();
-
-      // Engine pod
-      ctx.fillStyle = '#aabbcc';
-      ctx.beginPath();
-      ctx.ellipse(-2, 8, 6, 3, 0.1, 0, Math.PI*2);
-      ctx.fill();
-
-      // Engine glow
-      ctx.fillStyle = 'rgba(255,180,50,0.8)';
-      ctx.beginPath(); ctx.arc(-8, 8, 2, 0, Math.PI*2); ctx.fill();
-    }
     ctx.restore();
   };
 
   const drawIdle = (canvas) => {
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H); drawGrid(ctx,W,H);
-    drawPlane(ctx, 40, H-40, -0.15, false);
-    // Waiting text
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.font = '13px Orbitron, sans-serif';
+    drawGrid(ctx, W, H, 0);
+    drawPlane(ctx, 40, H-40, -0.15);
+    
+    // Modern Waiting Text
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = 'bold 20px "Orbitron", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Waiting for next round...', W/2, H/2);
+    ctx.fillText('WAITING FOR NEXT ROUND...', W/2, H/2);
   };
+
+  // ✅ FLEW AWAY CRASH ANIMATION
+  const animateCrash = useCallback(() => {
+    const av = avRef.current;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    av.flyAwayProgress += 0.05; // speed of flying away
+    const p = av.flyAwayProgress;
+
+    ctx.clearRect(0,0,W,H); 
+    drawGrid(ctx, W, H, 0);
+
+    // Draw previous curve but fading out
+    if (av.graphPoints.length > 1) {
+      ctx.strokeStyle = `rgba(230,0,38,${Math.max(0, 0.8 - p)})`; 
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(av.graphPoints[0].x, av.graphPoints[0].y);
+      av.graphPoints.forEach(pt => ctx.lineTo(pt.x, pt.y)); 
+      ctx.stroke();
+    }
+
+    // "FLEW AWAY!" Text exactly like real game
+    ctx.fillStyle = '#e60026';
+    ctx.font = '900 32px "Orbitron", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FLEW AWAY!', W/2, H/2 - 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 40px "Orbitron", sans-serif';
+    ctx.fillText(`${av.crashAt.toFixed(2)}x`, W/2, H/2 + 25);
+
+    // Plane flying rapidly to top right
+    const last = av.graphPoints[av.graphPoints.length-1] || {x:W/2, y:H/2};
+    const flyX = last.x + (p * 500);
+    const flyY = last.y - (p * 300);
+    drawPlane(ctx, flyX, flyY, -0.5);
+
+    if (p < 2) {
+      av.rafId = requestAnimationFrame(animateCrash);
+    }
+  }, []);
 
   const handleCrashFn = useCallback(async () => {
     const av = avRef.current;
     av.flying = false; av.crashed = true;
     if (av.rafId) cancelAnimationFrame(av.rafId);
+    
     setFlying(false); setStatBar(false);
-    setMultDisp('CRASHED!'); setMultClass('crashed');
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d'), W=canvas.width, H=canvas.height;
-      ctx.clearRect(0,0,W,H); drawGrid(ctx,W,H);
-      if (av.graphPoints.length>1) {
-        ctx.strokeStyle='rgba(255,34,68,0.7)'; ctx.lineWidth=2.5;
-        ctx.beginPath(); ctx.moveTo(av.graphPoints[0].x, av.graphPoints[0].y);
-        av.graphPoints.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.stroke();
-      }
-      const last = av.graphPoints[av.graphPoints.length-1] || {x:W/2, y:H/2};
-      drawPlane(ctx, last.x, last.y, 0, true);
-    }
+    setMultDisp(`FLEW AWAY!`); setMultClass('crashed');
+    
+    av.flyAwayProgress = 0;
+    av.rafId = requestAnimationFrame(animateCrash);
+
     if (!av.cashed && av.sessionId) {
       const d = await api.post('/games/aviator/crash', { session_id: av.sessionId });
       if (d) applyCoins(d);
     }
-    showToast(`💥 Crashed at ${av.crashAt.toFixed(2)}x!`, 'lose');
     setHistPills(p => [{v:av.crashAt, c:av.crashAt<2?'low':av.crashAt<5?'mid':av.crashAt<20?'high':'mega'}, ...p.slice(0,7)]);
+    
     setTimeout(() => {
       setMultDisp('WAITING...'); setMultClass('waiting');
       if (canvasRef.current) drawIdle(canvasRef.current);
-    }, 3000);
-  }, [applyCoins, showToast]);
+    }, 3500);
+  }, [applyCoins, animateCrash]);
 
   const doActualCashOut = useCallback(async () => {
     const av = avRef.current;
     if (!av.flying || av.cashed) return;
     av.cashed = true; av.flying = false;
     if (av.rafId) cancelAnimationFrame(av.rafId);
+    
     const mult = parseFloat(av.mult.toFixed(2));
     const d = await api.post('/games/aviator/cashout', { session_id: av.sessionId, multiplier: mult });
     if (!d?.success) { showToast('❌ '+(d?.message||'Failed'), 'lose'); av.cashed=false; av.flying=true; return; }
+    
     applyCoins(d);
     setFlying(false); setCashed(true); setStatBar(false);
     setMultDisp(mult.toFixed(2)+'x'); setMultClass('win');
     confetti();
-    showModal('✈️','CASHED OUT!',`${mult.toFixed(2)}x pe cash out kiya!`,`+🪙${d.win_amount.toLocaleString()}`);
+    showModal('✈️','CASHED OUT!',`You grabbed ${mult.toFixed(2)}x!`,`+🪙${d.win_amount.toLocaleString()}`);
+    
     setTimeout(() => { setCashed(false); setMultDisp('WAITING...'); setMultClass('waiting'); if(canvasRef.current) drawIdle(canvasRef.current); }, 4000);
   }, [applyCoins, showToast, showModal, confetti]);
 
@@ -209,8 +235,6 @@ export default function Aviator() {
     const W = canvas.width, H = canvas.height;
     const elapsed = (Date.now() - av.startTime) / 1000;
 
-    // Faster realistic growth - real Aviator speed
-    // Starts slow then accelerates - like real game
     const mult = Math.max(1.00, 1 + elapsed * 0.4 + Math.pow(elapsed * 0.18, 2));
     av.mult = mult;
 
@@ -222,46 +246,46 @@ export default function Aviator() {
     setMultDisp(mult.toFixed(2)+'x');
     setMultClass(mult<2?'low':mult<5?'mid':mult<10?'high':'mega');
 
-    // Graph: smooth exponential curve
+    // Smooth curve
     const progress = Math.min((mult - 1) / (av.crashAt - 1 + 0.01), 0.95);
-    const rx = 35 + progress * (W - 80);
-    const ry = H - 35 - progress * (H - 70);
+    const rx = 40 + progress * (W - 100);
+    const ry = H - 40 - progress * (H - 90);
     av.graphPoints.push({x:rx, y:ry});
     if (av.graphPoints.length > 300) av.graphPoints.shift();
 
-    ctx.clearRect(0,0,W,H); drawGrid(ctx,W,H);
+    ctx.clearRect(0,0,W,H); 
+    drawGrid(ctx, W, H, elapsed); // Moving grid!
 
-    // Draw filled curve
+    // Red Curve Gradient
     if (av.graphPoints.length > 1) {
-      const grad = ctx.createLinearGradient(0,H,W,0);
-      grad.addColorStop(0,'rgba(0,255,150,0.5)');
-      grad.addColorStop(1,'rgba(0,220,255,0.8)');
-      ctx.strokeStyle = grad; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#e60026'; 
+      ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(av.graphPoints[0].x, av.graphPoints[0].y);
       av.graphPoints.forEach(p => ctx.lineTo(p.x, p.y));
       ctx.stroke();
-      // Fill
-      ctx.beginPath(); ctx.moveTo(35, H-1);
+
+      // Red Fill Below Curve
+      ctx.beginPath(); ctx.moveTo(40, H-2);
       av.graphPoints.forEach(p => ctx.lineTo(p.x, p.y));
-      ctx.lineTo(av.graphPoints[av.graphPoints.length-1].x, H-1);
+      ctx.lineTo(av.graphPoints[av.graphPoints.length-1].x, H-2);
       ctx.closePath();
       const fill = ctx.createLinearGradient(0,0,0,H);
-      fill.addColorStop(0,'rgba(0,255,150,0.12)');
-      fill.addColorStop(1,'rgba(0,255,150,0)');
+      fill.addColorStop(0,'rgba(230,0,38,0.3)');
+      fill.addColorStop(1,'rgba(230,0,38,0.0)');
       ctx.fillStyle = fill; ctx.fill();
     }
 
-    // Plane angle
+    // Plane angle logic
     const pts = av.graphPoints;
-    let angle = -0.3;
-    if (pts.length > 3) {
-      const dx = rx - pts[pts.length-3].x;
-      const dy = ry - pts[pts.length-3].y;
-      angle = Math.atan2(dy, dx) * 0.6;
+    let angle = -0.2;
+    if (pts.length > 5) {
+      const dx = rx - pts[pts.length-5].x;
+      const dy = ry - pts[pts.length-5].y;
+      angle = Math.atan2(dy, dx) * 0.8;
     }
-    drawPlane(ctx, rx, ry, angle, false);
+    drawPlane(ctx, rx, ry, angle);
 
-    // Update stat elements
+    // Update HTML stats
     const win = Math.floor(av.bet * mult);
     const md = document.getElementById('avMultDisp'); if(md) md.textContent = mult.toFixed(2)+'x';
     const wd = document.getElementById('avWinDisp'); if(wd) wd.textContent = '🪙'+win.toLocaleString();
@@ -275,30 +299,30 @@ export default function Aviator() {
     if (gameSettings.aviator === false) { showToast('🚫 Aviator disabled', 'lose'); return; }
     const d = await api.post('/games/aviator/start', { bet_amount: bet });
     if (!d?.success) { showToast('❌ '+(d?.message||'Failed'), 'lose'); return; }
+    
     applyCoins(d);
-    avRef.current = { flying:true, crashed:false, sessionId:d.session_id, crashAt:d.crash_at, bet, mult:1, cashed:false, startTime:Date.now(), rafId:null, graphPoints:[] };
+    avRef.current = { flying:true, crashed:false, sessionId:d.session_id, crashAt:d.crash_at, bet, mult:1, cashed:false, startTime:Date.now(), rafId:null, graphPoints:[], flyAwayProgress:0 };
     setFlying(true); setCashed(false);
     setMultDisp('1.00x'); setMultClass('low');
     setStatBar(true);
+    
     const bd = document.getElementById('avBetDisp'); if(bd) bd.textContent = '🪙'+bet.toLocaleString();
     avRef.current.rafId = requestAnimationFrame(animate);
   };
 
-  const pillColor = (c) => c==='low'?'#ff6688':c==='mid'?'var(--gold)':c==='high'?'var(--teal)':'#cc66ff';
+  const pillColor = (c) => c==='low'?'#ff4d4d':c==='mid'?'#ffcc00':c==='high'?'#00e676':'#d500f9';
 
   return (
     <div className="av-page">
       {gameSettings.aviator===false && <div className="disabled-msg">🚫 Aviator is currently disabled.</div>}
       <div className="av-wrap" style={{display:gameSettings.aviator===false?'none':'flex'}}>
 
-        {/* Topbar */}
         <div className="av-topbar">
           <button className="back-btn" onClick={()=>navigate('/')}>← BACK</button>
-          <div className="av-topbar-title">✈️ AVIATOR</div>
-          <div className="av-live"><div className="av-live-dot"></div>LIVE</div>
+          <div className="av-topbar-title" style={{color:'#e60026', fontWeight:900, fontSize:'20px'}}>✈️ AVIATOR</div>
+          <div className="av-live"><div className="av-live-dot" style={{backgroundColor:'#e60026'}}></div>LIVE</div>
         </div>
 
-        {/* How to Play */}
         <div className="av-htp">
           <div className="av-htp-header" onClick={()=>setHtpOpen(o=>!o)}>
             <span>📖 HOW TO PLAY</span>
@@ -310,38 +334,34 @@ export default function Aviator() {
               <div className="htp-step"><div className="htp-num">2</div><div className="htp-text">Multiplier badhta rahega — <strong>1.00x → 2x → 10x → 100x</strong></div></div>
               <div className="htp-step"><div className="htp-num">3</div><div className="htp-text">Plane crash hone se pehle <strong>CASH OUT</strong> dabao!</div></div>
               <div className="htp-step"><div className="htp-num">4</div><div className="htp-text">Crash ke baad cash out nahi hua → <strong>poora bet lost!</strong></div></div>
-              <div className="htp-prize">💡 Auto Cashout use karo risk kam karne ke liye! Max 100x possible!</div>
+              <div className="htp-prize" style={{color:'#ffcc00'}}>💡 Auto Cashout use karo risk kam karne ke liye! Max 100x possible!</div>
             </div>
           )}
         </div>
 
-        {/* History pills */}
         <div className="av-hist-bar">
           {histPills.map((p,i) => (
-            <span key={i} className={'av-hpill '+p.c} style={{color:pillColor(p.c)}}>
+            <span key={i} className={'av-hpill '+p.c} style={{color:pillColor(p.c), border:`1px solid ${pillColor(p.c)}`}}>
               {typeof p.v === 'number' ? p.v.toFixed(2) : p.v}x
             </span>
           ))}
         </div>
 
-        {/* Canvas */}
-        <div className="av-canvas-wrap">
+        <div className="av-canvas-wrap" style={{border: '2px solid #333', borderRadius: '12px', overflow: 'hidden'}}>
           <canvas ref={canvasRef}></canvas>
           <div className="av-mult-display">
-            <div className={'av-mult-num '+multClass}>{multDisp}</div>
+            <div className={'av-mult-num '+multClass} style={{textShadow: multDisp.includes('AWAY') ? 'none' : '0 0 20px rgba(255,255,255,0.2)'}}>{multDisp}</div>
           </div>
         </div>
 
-        {/* Stat bar */}
         {statBar && (
-          <div className="av-stat-bar">
+          <div className="av-stat-bar" style={{background:'#1a1a1a', borderTop:'2px solid #e60026'}}>
             <div className="av-stat-item"><div className="av-stat-v" id="avBetDisp">🪙{bet}</div><div className="av-stat-l">BET</div></div>
-            <div className="av-stat-item"><div className="av-stat-v" id="avMultDisp" style={{color:'#00ff99'}}>1.00x</div><div className="av-stat-l">MULTIPLIER</div></div>
-            <div className="av-stat-item"><div className="av-stat-v" id="avWinDisp" style={{color:'#ffc107'}}>🪙0</div><div className="av-stat-l">CURRENT WIN</div></div>
+            <div className="av-stat-item"><div className="av-stat-v" id="avMultDisp" style={{color:'#fff'}}>1.00x</div><div className="av-stat-l" style={{color:'#e60026'}}>MULTIPLIER</div></div>
+            <div className="av-stat-item"><div className="av-stat-v" id="avWinDisp" style={{color:'#ffcc00'}}>🪙0</div><div className="av-stat-l">CURRENT WIN</div></div>
           </div>
         )}
 
-        {/* Panel */}
         <div className="av-panel">
           <div className="av-bet-row">
             <div className="av-bet-lbl">BET</div>
@@ -364,11 +384,11 @@ export default function Aviator() {
             <label htmlFor="autoChk" style={{fontSize:9,color:'#aaa',fontFamily:'Orbitron'}}>ON</label>
           </div>
           <div className="av-btns">
-            <button className="av-cash-btn" onClick={doActualCashOut} disabled={!flying||cashed}>
-              CASH OUT<br/><span id="avCashAmt" style={{fontSize:13,fontWeight:900}}>🪙0</span>
+            <button className="av-cash-btn" style={{background: cashed ? '#666' : '#ff9900', color:'#000'}} onClick={doActualCashOut} disabled={!flying||cashed}>
+              CASH OUT<br/><span id="avCashAmt" style={{fontSize:15,fontWeight:900}}>🪙0</span>
             </button>
-            <button className="av-go-btn" onClick={doFly} disabled={flying}>
-              {flying?'✈️ FLYING...':'✈️ FLY'}
+            <button className="av-go-btn" style={{background: flying ? '#333' : '#e60026'}} onClick={doFly} disabled={flying}>
+              {flying?'✈️ FLYING...':'BET 🚀'}
             </button>
           </div>
         </div>

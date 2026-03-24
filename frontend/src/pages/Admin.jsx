@@ -10,7 +10,7 @@ const COLOR_MAP = {0:'violet',1:'green',2:'red',3:'green',4:'red',5:'violet',6:'
 
 export default function Admin() {
   const navigate = useNavigate();
-  const { user, gameSettings, setGameSettings, siteSettings, setSiteSettings, refreshSettings } = useAuth();
+  const { user, gameSettings, setGameSettings, siteSettings, setSiteSettings, refreshSettings, logout } = useAuth();
   const { showToast } = useUI();
   const [stats, setStats] = useState({});
   const [users, setUsers] = useState([]);
@@ -23,6 +23,7 @@ export default function Admin() {
   const [overrideNum, setOverrideNum] = useState(null);
   const [overrideStatus, setOverrideStatus] = useState(null);
   const [tab, setTab] = useState('dashboard');
+  const [payTab, setPayTab] = useState('all');
 
   useEffect(() => { if (!user?.is_admin) { navigate('/'); return; } loadAll(); }, []);
 
@@ -32,7 +33,7 @@ export default function Admin() {
       api.get('/admin/payment-settings'),
       api.get('/admin/game-settings'),
       api.get('/admin/users'),
-      api.get('/admin/deposits?status=pending'),
+      api.get('/admin/deposits'),
       api.get('/admin/wingo/current'),
     ]);
     if (s?.success) setStats(s.stats);
@@ -92,8 +93,12 @@ export default function Admin() {
     showToast('🗑️ Cleared', 'info'); setOverrideNum(null); setOverrideStatus(null);
   };
 
-  const { logout } = useAuth();
   const TABS = ['dashboard','users','payments','games','wingo'];
+
+  // Filtered deposits
+  const filteredDeps = deps.filter(d => payTab === 'all' ? true : d.type === payTab);
+  const depositCount = deps.filter(d => d.type === 'deposit' && d.status === 'pending').length;
+  const withdrawCount = deps.filter(d => d.type === 'withdraw' && d.status === 'pending').length;
 
   return (
     <div style={{display:'flex',flexDirection:'column',flex:1,overflow:'hidden'}}>
@@ -104,16 +109,17 @@ export default function Admin() {
           🚪 LOGOUT
         </button>
       </div>
-      {/* Admin Tab Bar */}
+
       <div className="admin-tabs">
         {TABS.map(t => <div key={t} className={'admin-tab'+(tab===t?' active':'')} onClick={()=>setTab(t)}>{t.toUpperCase()}</div>)}
       </div>
+
       <div className="page-scroll">
 
         {/* DASHBOARD */}
         {tab==='dashboard' && (
           <div>
-            <div className="astat-grid" id="adminStats">
+            <div className="astat-grid">
               {[['👥',stats.total_users||0,'PLAYERS'],['🟢',stats.active_today||0,'ACTIVE TODAY'],['🎲',stats.total_bets||0,'TOTAL BETS'],['⏳',stats.pending_deposits||0,'PENDING']].map(([icon,val,lbl])=>(
                 <div key={lbl} className="astat"><div className="astat-val">{icon} {val}</div><div className="astat-lbl">{lbl}</div></div>
               ))}
@@ -123,7 +129,7 @@ export default function Admin() {
 
         {/* USERS */}
         {tab==='users' && (
-          <div id="adminUsers">
+          <div>
             {users.map(u => (
               <div key={u.id} className="auser">
                 <div>
@@ -149,23 +155,58 @@ export default function Admin() {
               <div className="fg"><label>TELEGRAM LINK</label><input value={tgLink} onChange={e=>setTgLink(e.target.value)} placeholder="https://t.me/yoursupport" /></div>
               <button className="btn-gold" onClick={savePaySettings}>💾 SAVE SETTINGS</button>
             </div>
-            <div className="sec-sep">⏳ PENDING REQUESTS</div>
-            {!deps.length ? <div className="empty">No pending requests 🎉</div> : deps.map(d => {
-              const isW = d.type === 'withdraw';
-              return (
-                <div key={d.id} className="dep-req">
-                  <div>
-                    <div className="dep-req-name">{isW?'📤':'📥'} {d.username} — 🪙{parseInt(d.amount).toLocaleString()}</div>
-                    <div className="dep-req-meta">{isW?'WITHDRAW':'DEPOSIT'} | {d.payment_method||''}</div>
-                    <div className="dep-req-meta">{d.payment_proof||''}</div>
-                  </div>
-                  <div className="abtns">
-                    <button className="abtn ok" onClick={()=>approveDep(d.id,'approve')}>✅</button>
-                    <button className="abtn no" onClick={()=>approveDep(d.id,'reject')}>❌</button>
-                  </div>
-                </div>
-              );
-            })}
+
+            {/* Sub Tabs */}
+            <div style={{display:'flex',gap:8,margin:'14px 0 10px'}}>
+              {[
+                {key:'all', label:'📋 ALL', count: deps.filter(d=>d.status==='pending').length},
+                {key:'deposit', label:'📥 DEPOSITS', count: depositCount},
+                {key:'withdraw', label:'📤 WITHDRAWALS', count: withdrawCount},
+              ].map(({key, label, count}) => (
+                <button key={key} onClick={()=>setPayTab(key)}
+                  style={{flex:1,padding:'8px 4px',borderRadius:10,border:'1.5px solid',fontFamily:'Orbitron',fontSize:8,fontWeight:700,cursor:'pointer',position:'relative',
+                    background: payTab===key ? (key==='withdraw'?'rgba(255,34,68,.15)':key==='deposit'?'rgba(0,230,118,.12)':'rgba(255,193,7,.1)') : 'rgba(255,255,255,.04)',
+                    borderColor: payTab===key ? (key==='withdraw'?'var(--red)':key==='deposit'?'var(--teal)':'var(--gold)') : 'rgba(255,255,255,.1)',
+                    color: payTab===key ? (key==='withdraw'?'var(--red)':key==='deposit'?'var(--teal)':'var(--gold)') : '#888'
+                  }}>
+                  {label}
+                  {count > 0 && (
+                    <span style={{position:'absolute',top:-6,right:-4,background:'var(--red)',color:'#fff',borderRadius:'50%',width:16,height:16,fontSize:8,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700}}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            <div className="sec-sep">
+              {payTab==='deposit'?'📥 DEPOSIT REQUESTS':payTab==='withdraw'?'📤 WITHDRAWAL REQUESTS':'⏳ ALL REQUESTS'}
+            </div>
+
+            {!filteredDeps.length
+              ? <div className="empty">Koi request nahi 🎉</div>
+              : filteredDeps.map(d => {
+                  const isW = d.type === 'withdraw';
+                  return (
+                    <div key={d.id} className="dep-req">
+                      <div>
+                        <div className="dep-req-name">{isW?'📤':'📥'} {d.username} — 🪙{parseInt(d.amount).toLocaleString()}</div>
+                        <div className="dep-req-meta">{isW?'WITHDRAW':'DEPOSIT'} | {d.payment_method||''}</div>
+                        <div className="dep-req-meta">{d.payment_proof||''}</div>
+                        <div className="dep-req-meta" style={{color: d.status==='approved'?'var(--teal)':d.status==='rejected'?'var(--red)':'var(--gold)'}}>
+                          {d.status==='approved'?'✅ Approved':d.status==='rejected'?'❌ Rejected':'⏳ Pending'}
+                        </div>
+                      </div>
+                      {d.status==='pending' && (
+                        <div className="abtns">
+                          <button className="abtn ok" onClick={()=>approveDep(d.id,'approve')}>✅</button>
+                          <button className="abtn no" onClick={()=>approveDep(d.id,'reject')}>❌</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+            }
           </div>
         )}
 
@@ -196,15 +237,15 @@ export default function Admin() {
               <div className="card-title">🎨 WINGO OVERRIDE</div>
               <div style={{marginBottom:10}}>
                 <div style={{fontSize:10,color:'#aaa'}}>Current Period</div>
-                <div id="adminPeriod" style={{fontFamily:'Orbitron',fontSize:14,color:'var(--teal)',fontWeight:700}}>{wingoPeriod}</div>
+                <div style={{fontFamily:'Orbitron',fontSize:14,color:'var(--teal)',fontWeight:700}}>{wingoPeriod}</div>
               </div>
-              <div id="overrideStatus" style={{marginBottom:12,padding:'8px 12px',borderRadius:10,background:'rgba(255,255,255,.04)',fontSize:11}}>
+              <div style={{marginBottom:12,padding:'8px 12px',borderRadius:10,background:'rgba(255,255,255,.04)',fontSize:11}}>
                 {overrideStatus!==null && overrideStatus!==undefined
                   ? <span style={{color:'var(--gold)',fontWeight:700}}>⚡ SET: #{overrideStatus}</span>
                   : <span style={{color:'#888'}}>No override — RANDOM</span>
                 }
               </div>
-              <div id="overrideGrid" style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:12}}>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:6,marginBottom:12}}>
                 {[...Array(10)].map((_,i) => (
                   <div key={i} className={'nsel-btn'+(overrideNum===i?' sel':'')} onClick={()=>setOverrideNum(i)}>
                     <span className="nsel-num">{i}</span>
@@ -219,6 +260,7 @@ export default function Admin() {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

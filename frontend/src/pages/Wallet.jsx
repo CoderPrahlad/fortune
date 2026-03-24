@@ -28,22 +28,27 @@ export default function Wallet() {
   useEffect(() => { if (location.state?.openDeposit) { setShowDep(true); setShowWith(false); } }, [location.state]);
 
   const loadWallet = async () => {
-    const d = await api.get('/wallet/transactions');
-    if (!d?.success) return;
-    const all = d.transactions || [];
-    setDepTx(all.filter(t => t.type === 'deposit'));
-    setWithTx(all.filter(t => t.type === 'withdraw'));
-    setBonusTx(all.filter(t => ['daily_bonus','refer_bonus','admin_add','joining_bonus'].includes(t.type)));
-    // Also refresh balance
-    const bal = await api.get('/wallet/balance');
-    if (bal?.success) applyCoins(bal);
+    try {
+      const d = await api.get('/wallet/transactions');
+      const all = d?.transactions || d?.data?.transactions || [];
+      setDepTx(all.filter(t => t.type === 'deposit'));
+      setWithTx(all.filter(t => t.type === 'withdraw'));
+      setBonusTx(all.filter(t => ['daily_bonus','refer_bonus','admin_add','joining_bonus'].includes(t.type)));
+
+      const bal = await api.get('/wallet/balance');
+      const balData = bal?.data || bal;
+      if (balData?.success) applyCoins(balData);
+    } catch(e) {
+      console.error('Wallet load error:', e);
+    }
   };
 
   const doDeposit = async () => {
     if (!depAmt || parseInt(depAmt) < 100) { showToast('⚠️ Min deposit ₹100', 'lose'); return; }
     if (!depProof) { showToast('⚠️ Transaction ID required', 'lose'); return; }
     const d = await api.post('/wallet/deposit', { amount: parseInt(depAmt), payment_proof: depProof, payment_method: 'UPI' });
-    if (!d?.success) { showToast('❌ '+(d?.message||'Failed'), 'lose'); return; }
+    const res = d?.data || d;
+    if (!res?.success) { showToast('❌ '+(res?.message||'Failed'), 'lose'); return; }
     showToast('✅ Deposit request submitted!', 'win');
     setDepAmt(''); setDepProof(''); setShowDep(false); loadWallet();
   };
@@ -61,7 +66,8 @@ export default function Wallet() {
       proof = `Bank | Name: ${withName} | Acc: ${withAccNo} | IFSC: ${withIfsc} | Bank: ${withBank}`;
     }
     const d = await api.post('/wallet/withdraw', { amount: amt, upi_id: proof });
-    if (!d?.success) { showToast('❌ '+(d?.message||'Failed'), 'lose'); return; }
+    const res = d?.data || d;
+    if (!res?.success) { showToast('❌ '+(res?.message||'Failed'), 'lose'); return; }
     showToast('✅ Withdrawal request submitted!', 'win');
     setWithAmt(''); setWithUpi(''); setWithName(''); setWithAccNo(''); setWithIfsc(''); setWithBank('');
     setShowWith(false); loadWallet();
@@ -72,8 +78,10 @@ export default function Wallet() {
   const txItem = (t) => {
     const isPlus = ['deposit','win','daily_bonus','refer_bonus','admin_add','joining_bonus'].includes(t.type);
     const icons = { deposit:'📥', withdraw:'📤', daily_bonus:'🎁', refer_bonus:'👥', admin_add:'⚙️', win:'🏆', loss:'💸', joining_bonus:'🎉' };
+    const statusColor = { approved:'var(--teal)', rejected:'var(--red)', pending:'var(--gold)' };
+    const statusIcon = { approved:'✅ APPROVED', rejected:'❌ REJECTED', pending:'⏳ PENDING' };
     return (
-      <div key={t.id} className="tx-item">
+      <div key={t.id+'-'+t.type+'-'+t.created_at} className="tx-item">
         <div style={{flex:1}}>
           <div className="tx-type">{icons[t.type]||'💰'} {t.type.replace(/_/g,' ').toUpperCase()}</div>
           <div className="tx-date">{new Date(t.created_at).toLocaleString()}</div>
@@ -81,7 +89,11 @@ export default function Wallet() {
         </div>
         <div style={{textAlign:'right'}}>
           <div className={'tx-amt '+(isPlus?'plus':'minus')}>{isPlus?'+':'-'}🪙{parseInt(t.amount).toLocaleString()}</div>
-          {t.status && <div className={'tx-stat '+t.status}>{t.status.toUpperCase()}</div>}
+          {t.status && (
+            <div style={{fontSize:9,fontWeight:700,marginTop:3,color:statusColor[t.status]||'#aaa'}}>
+              {statusIcon[t.status]||t.status.toUpperCase()}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -89,7 +101,6 @@ export default function Wallet() {
 
   return (
     <div className="page-scroll">
-      {/* Hero */}
       <div className="wallet-hero">
         <div className="w-bal-row">
           <div className="w-bal-box">
@@ -102,7 +113,6 @@ export default function Wallet() {
             <div style={{fontSize:9,color:'var(--red)',marginTop:2}}>❌ Not Withdrawable</div>
           </div>
         </div>
-        {/* Withdrawable highlight */}
         <div className="w-withdrawable-box">
           <div>
             <div style={{fontSize:10,color:'#aaa',letterSpacing:1}}>🏆 GAME WINNING COINS</div>
@@ -116,7 +126,6 @@ export default function Wallet() {
         <div className="w-rate">1 Coin = ₹1 &nbsp;|&nbsp; Min Withdraw ₹500</div>
       </div>
 
-      {/* Action Buttons */}
       <div className="wallet-actions">
         <div className="wact-btn dep" onClick={()=>{setShowDep(!showDep);setShowWith(false);}}>
           <span className="wact-icon">📥</span>DEPOSIT
@@ -126,7 +135,6 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Deposit Form */}
       {showDep && (
         <div className="form-card show">
           <div className="form-card-hdr">
@@ -151,7 +159,6 @@ export default function Wallet() {
         </div>
       )}
 
-      {/* Withdraw Form */}
       {showWith && (
         <div className="form-card show">
           <div className="form-card-hdr">
