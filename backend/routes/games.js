@@ -19,13 +19,14 @@ router.get('/status', async (req, res) => {
         } catch(e2) {}
       }
     }
+
     res.json({ success: true, settings });
   } catch (e) {
     res.json({ success: false, message: e.message });
   }
 });
 
-// ── HIGHLIGHT: STRICT 480 LIMIT RIG LOGIC ──
+// ── HIGHLIGHT: STRICT LIMIT RIG LOGIC (Dynamic 500-100 logic integration) ──
 async function checkRigState(userId) {
   try {
     const [u] = await db.query('SELECT COALESCE(withdrawable_coins,0) as withdrawable_coins, rig_direction FROM users WHERE id=?', [userId]);
@@ -35,16 +36,18 @@ async function checkRigState(userId) {
     let balance = Math.max(0, isNaN(rawBalance) ? 0 : rawBalance); 
     let direction = u[0].rig_direction || 'UP';
 
+    // Winning Phase (Lagatar jeetega jab tak 500 na pohoch jaye)
     if (direction === 'UP') {
-      if (balance >= 480) { 
+      if (balance >= 500) { 
         try { await db.query("UPDATE users SET rig_direction='DOWN' WHERE id=?", [userId]); } catch(e){}
-        return { isWin: false, maxAllowedWin: 0 };
+        return { isWin: false, maxAllowedWin: 0 }; // Forced Loss start
       }
-      return { isWin: true, maxAllowedWin: 480 - balance }; 
+      return { isWin: true, maxAllowedWin: 500 - balance }; 
     } else { 
+      // Forced Loss Phase (Lagatar haarega jab tak 100 tak wapas na gir jaye)
       if (balance <= 100) {
         try { await db.query("UPDATE users SET rig_direction='UP' WHERE id=?", [userId]); } catch(e){}
-        return { isWin: true, maxAllowedWin: 480 - balance }; 
+        return { isWin: true, maxAllowedWin: 500 - balance }; // Recovery start
       }
       return { isWin: false, maxAllowedWin: 0 };
     }
@@ -65,6 +68,7 @@ async function deductBet(userId, betAmount) {
   
   if (user.coins < realNeed) throw new Error('Insufficient coins');
   
+  // Winnings First Logic. GREATEST(0) ensure karega ki withdrawable 0 se neeche na jaye.
   await db.query('UPDATE users SET coins=coins-?, bonus_coins=bonus_coins-?, withdrawable_coins=GREATEST(0, COALESCE(withdrawable_coins,0)-?) WHERE id=?',
     [realNeed, bonusUse, realNeed, userId]);
     
@@ -100,7 +104,10 @@ router.post('/slots/spin', authMiddleware, async (req, res) => {
   try {
     const { bet_amount } = req.body;
     const bet = parseInt(bet_amount);
-    if (!bet || bet < 10 || bet > 5000) return res.json({ success: false, message: 'Invalid bet' });
+    if (!bet || bet < 10 || bet > 5000) return res.json({ success: false, message: 'Invalid bet (10-5000)' });
+
+    const [gs] = await db.query("SELECT is_enabled FROM game_settings WHERE game_name='slots'");
+    if (gs.length && !gs[0].is_enabled) return res.json({ success: false, message: 'Slots disabled' });
 
     await deductBet(req.user.id, bet);
 
@@ -138,6 +145,10 @@ router.post('/slots/spin', authMiddleware, async (req, res) => {
 
     await db.query('INSERT INTO game_history (user_id, game, bet, payout, result) VALUES (?,?,?,?,?)',
       [req.user.id, 'slots', bet, win, msg || `${s[0]}${s[1]}${s[2]}`]);
+      
+    await db.query('INSERT INTO transactions (user_id, type, amount, description, coin_type) VALUES (?,?,?,?,?)',
+      [req.user.id, win > 0 ? 'win' : 'loss', bet, `Slots: ${msg || 'No match'}`, 'real']);
+      
     await db.query('UPDATE users SET total_bets=total_bets+1 WHERE id=?', [req.user.id]);
     if (win > 0) await db.query('UPDATE users SET total_wins=total_wins+1 WHERE id=?', [req.user.id]);
 
@@ -241,8 +252,13 @@ async function resolveWingoPeriodCore(period_number) {
     const color = COLOR_MAP[num];
     const size = SIZE_MAP[num];
 
-    await db.query(`INSERT INTO wingo_periods (period_number, result_number, result_color, result_size, status) VALUES (?,?,?,?,'closed')`,
-      [period_number, num, color, size]);
+    if (ov.length) {
+        await db.query(`UPDATE wingo_periods SET result_number=?, result_color=?, result_size=?, status='closed' WHERE period_number=?`,
+          [num, color, size, period_number]);
+    } else {
+        await db.query(`INSERT INTO wingo_periods (period_number, result_number, result_color, result_size, status) VALUES (?,?,?,?,'closed')`,
+          [period_number, num, color, size]);
+    }
 
     const [bets2] = await db.query('SELECT * FROM wingo_bets WHERE period_number=? AND status=?', [period_number, 'pending']);
     const bettorIds = [];
@@ -278,7 +294,6 @@ async function resolveWingoPeriodCore(period_number) {
 }
 
 // ── WINGO API ROUTES ──
-
 router.get('/wingo/period', authMiddleware, (req, res) => {
   const timer = parseInt(req.query.timer) || 2; 
   const { period, secondsLeft } = getCurrentPeriod(timer);
@@ -291,6 +306,9 @@ router.post('/wingo/bet', authMiddleware, async (req, res) => {
     const bet = parseInt(bet_amount);
     const timeMode = parseInt(timer) || 2; 
     if (!bet || bet < 10) return res.json({ success: false, message: 'Min bet 10' });
+
+    const [gs] = await db.query("SELECT is_enabled FROM game_settings WHERE game_name='wingo'");
+    if (gs.length && !gs[0].is_enabled) return res.json({ success: false, message: 'Wingo disabled' });
 
     const { secondsLeft } = getCurrentPeriod(timeMode);
     if (secondsLeft < 5) return res.json({ success: false, message: 'Betting closed!' });
@@ -330,6 +348,9 @@ router.post('/cards/play', authMiddleware, async (req, res) => {
     const cardPicked = req.body.selected_card ?? req.body.picked_card;
     const bet = 50; 
     const winAmount = 150; 
+
+    const [gs] = await db.query("SELECT is_enabled FROM game_settings WHERE game_name='cards'");
+    if (gs.length && !gs[0].is_enabled) return res.json({ success: false, message: 'Card game disabled' });
 
     await deductBet(req.user.id, bet);
 
@@ -371,6 +392,9 @@ router.post('/jackpot/buy', authMiddleware, async (req, res) => {
   try {
     const { selected_numbers } = req.body;
     const bet = 100;
+
+    const [gs] = await db.query("SELECT is_enabled FROM game_settings WHERE game_name='jackpot'");
+    if (gs.length && !gs[0].is_enabled) return res.json({ success: false, message: 'Jackpot disabled' });
 
     if (!selected_numbers || selected_numbers.length !== 5) return res.json({ success: false, message: 'Pick exactly 5 numbers' });
 
@@ -442,7 +466,11 @@ router.post('/aviator/start', authMiddleware, async (req, res) => {
   try {
     const { bet_amount } = req.body;
     const bet = parseInt(bet_amount);
-    if (!bet || bet < 10 || bet > 5000) return res.json({ success: false, message: 'Invalid bet' });
+    
+    if (!bet || bet < 10 || bet > 5000) return res.json({ success: false, message: 'Invalid bet (10-5000)' });
+
+    const [gs] = await db.query("SELECT is_enabled FROM game_settings WHERE game_name='aviator'");
+    if (gs.length && !gs[0].is_enabled) return res.json({ success: false, message: 'Aviator disabled' });
 
     await deductBet(req.user.id, bet);
     await db.query('UPDATE users SET total_bets=total_bets+1 WHERE id=?', [req.user.id]);
@@ -465,7 +493,8 @@ router.post('/aviator/start', authMiddleware, async (req, res) => {
     }
 
     const sessionId = `av_${req.user.id}_${Date.now()}`;
-    aviatorSessions.set(sessionId, { userId: req.user.id, bet, crashAt, cashed: false });
+    aviatorSessions.set(sessionId, { userId: req.user.id, bet, crashAt, startTime: Date.now(), cashed: false });
+
     setTimeout(() => aviatorSessions.delete(sessionId), 180000);
 
     const bal = await getBalance(req.user.id);
@@ -480,11 +509,13 @@ router.post('/aviator/cashout', authMiddleware, async (req, res) => {
     const { session_id, multiplier } = req.body;
     const mult = parseFloat(multiplier);
 
-    if (!session_id || !aviatorSessions.has(session_id)) return res.json({ success: false, message: 'Invalid session' });
+    if (!session_id || !aviatorSessions.has(session_id)) return res.json({ success: false, message: 'Invalid or expired session' });
     const session = aviatorSessions.get(session_id);
 
+    if (session.userId !== req.user.id) return res.json({ success: false, message: 'Not your session' });
     if (session.cashed) return res.json({ success: false, message: 'Already cashed out' });
     if (mult > session.crashAt) return res.json({ success: false, message: `Crashed at ${session.crashAt}x!` });
+    if (mult < 1.00) return res.json({ success: false, message: 'Invalid multiplier' });
 
     session.cashed = true;
     const win = Math.floor(session.bet * mult);
@@ -492,7 +523,7 @@ router.post('/aviator/cashout', authMiddleware, async (req, res) => {
 
     await db.query('UPDATE users SET total_wins=total_wins+1 WHERE id=?', [req.user.id]);
     await db.query('INSERT INTO game_history (user_id, game, bet, payout, result) VALUES (?,?,?,?,?)',
-      [req.user.id, 'aviator', session.bet, win, `Cashout at ${mult}x | WIN`]);
+      [req.user.id, 'aviator', session.bet, win, `Cashout at ${mult}x | Crash was ${session.crashAt}x | WIN +🪙${win}`]);
 
     aviatorSessions.delete(session_id);
     const bal = await getBalance(req.user.id);
@@ -512,7 +543,7 @@ router.post('/aviator/crash', authMiddleware, async (req, res) => {
 
     session.cashed = true;
     await db.query('INSERT INTO game_history (user_id, game, bet, payout, result) VALUES (?,?,?,?,?)',
-      [req.user.id, 'aviator', session.bet, 0, `Crashed at ${session.crashAt}x | LOSS`]);
+      [req.user.id, 'aviator', session.bet, 0, `Crashed at ${session.crashAt}x | LOSS -🪙${session.bet}`]);
 
     aviatorSessions.delete(session_id);
     const bal = await getBalance(req.user.id);

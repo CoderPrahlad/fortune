@@ -57,13 +57,19 @@ export default function Wingo() {
   const resolveWingo = async (per, mode) => {
     const d = await api.post('/games/wingo/resolve', { period_number: per });
     if (!d?.success) return;
+    
+    // Show result
     setLastResult({ number: d.result_number, color: d.result_color, size: d.result_size });
+    
+    // Check if current user won
     if (d.bettor_ids && d.bettor_ids.length > 0) {
       confetti();
       showToast(`🏆 You WON! Result: #${d.result_number} ${d.result_color}`, 'win');
     } else {
       showToast(`Result: #${d.result_number} ${d.result_color} ${d.result_size}`, 'info');
     }
+    
+    // Refresh balance
     const bal = await api.get('/wallet/balance');
     if (bal?.success) applyCoins(bal);
     loadHist(mode);
@@ -72,6 +78,7 @@ export default function Wingo() {
   const loadHist = async (mode) => {
     const d = await api.get(`/games/wingo/history?timer=${mode}`);
     if (d?.success) {
+      // Map result_number/result_color/result_size → number/color/size
       const mapped = (d.history || []).map(h => ({
         number: h.result_number,
         color: h.result_color,
@@ -137,6 +144,7 @@ export default function Wingo() {
           ))}
         </div>
 
+        {/* HTP */}
         <div className="htp-card" style={{ marginTop: 0 }}>
           <div className="htp-header" onClick={e => { e.currentTarget.nextElementSibling.classList.toggle('open'); e.currentTarget.querySelector('.htp-arrow').classList.toggle('open'); }}>
             <div className="htp-title">📖 HOW TO PLAY</div><div className="htp-arrow">▼</div>
@@ -145,10 +153,12 @@ export default function Wingo() {
             <div className="htp-step"><div className="htp-num">1</div><div className="htp-text">Apna favorite timer select karo aur bet lagao</div></div>
             <div className="htp-step"><div className="htp-num">2</div><div className="htp-text"><strong>Color</strong> (Red/Green/Violet), <strong>Size</strong> (Small/Big), ya <strong>Number</strong> (0-9) choose karo</div></div>
             <div className="htp-step"><div className="htp-num">3</div><div className="htp-text">Bet amount select karo → <strong>PLACE BET</strong> dabao</div></div>
+            <div className="htp-step"><div className="htp-num">4</div><div className="htp-text">Timer khatam → result aata hai → jeeto!</div></div>
             <div className="htp-prize">🏆 Red/Green=×2 | Violet=×5 | Small/Big=×2 | Number=×9</div>
           </div>
         </div>
 
+        {/* Period + Timer */}
         <div className="wingo-hdr">
           <div style={{ fontSize: 9, color: '#ddd', letterSpacing: 3 }}>PERIOD ({timerMode}M)</div>
           <div className="period-num">{period || 'Loading...'}</div>
@@ -166,6 +176,7 @@ export default function Wingo() {
           {isClosing && <div style={{ fontSize: 10, color: 'var(--red)', fontWeight: 700, marginTop: 4, animation: 'sepBlink .5s infinite' }}>⚠️ BETTING CLOSED</div>}
         </div>
 
+        {/* Last Result */}
         {lastResult && (
           <div className="wingo-last-result">
             <span style={{ fontSize: 10, color: '#aaa', letterSpacing: 2 }}>LAST RESULT</span>
@@ -182,6 +193,7 @@ export default function Wingo() {
           </div>
         )}
 
+        {/* Bet Options */}
         <div className="card">
           <div className="wsec-lbl">— 🎨 COLOR —</div>
           <div className="wcolor-grid">
@@ -213,6 +225,7 @@ export default function Wingo() {
           </div>
         </div>
 
+        {/* Bet Amount */}
         <div className="card">
           <div className="wsec-lbl" style={{ textAlign: 'left', marginBottom: 7 }}>BET AMOUNT</div>
           <div className="bet-chips">
@@ -230,6 +243,7 @@ export default function Wingo() {
           </button>
         </div>
 
+        {/* Recent Results */}
         {hist.length > 0 && (
           <div className="card">
             <div className="card-title">📊 RECENT RESULTS ({timerMode}M)</div>

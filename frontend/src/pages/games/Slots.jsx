@@ -26,6 +26,7 @@ function useSound() {
     } catch(e){}
   };
   const playSpinSound = () => {
+    // Casino melody loop during spin
     [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.5,1.8,2.1,2.4,2.7,3.0,3.3,3.6,3.9,4.2,4.5].forEach((t,i) => {
       setTimeout(() => beep(300 + (i%8)*80, 0.09, 'square', 0.08), t*1000);
     });
@@ -54,6 +55,7 @@ export default function Slots() {
   const [spinning, setSpinning] = useState(false);
   const [reels, setReels] = useState(['🍒','🍋','🍊']);
   const [result, setResult] = useState('');
+  // Each reel animating independently
   const [reelAnim, setReelAnim] = useState([false,false,false]);
 
   // +20 YA -20 KARNE KA LOGIC
@@ -65,8 +67,10 @@ export default function Slots() {
     setSpinning(true); setResult('');
     setReelAnim([true, true, true]);
 
+    // Start sound
     playSpinSound();
 
+    // Call API
     const d = await api.post('/games/slots/spin', { bet_amount: bet });
 
     if (!d?.success) {
@@ -75,6 +79,7 @@ export default function Slots() {
       setSpinning(false); return;
     }
 
+    // Staggered reel stops: 1.8s, 2.6s, 3.4s — slow & realistic
     const finalSyms = d.symbols;
     const stopTimes = [1800, 2600, 3400];
 
@@ -86,6 +91,7 @@ export default function Slots() {
       }, ms);
     });
 
+    // After all reels stop
     setTimeout(() => {
       applyCoins(d);
       if (d.is_win) {
@@ -134,6 +140,7 @@ export default function Slots() {
             {reels.map((sym, i) => (
               <div key={i} className="reel">
                 <div className={`reel-track ${reelAnim[i] ? 'spinning' : ''}`}>
+                  {/* Show blurred symbols while spinning */}
                   {reelAnim[i] ? (
                     <>
                       {[...ALL_SYMS,...ALL_SYMS].map((s,j)=>(

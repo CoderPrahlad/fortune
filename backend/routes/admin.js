@@ -60,6 +60,7 @@ router.get('/deposits', adminMiddleware, async (req, res) => {
   } catch(e) { res.json({ success: false, message: e.message }); }
 });
 
+// ✅ UPDATED ROUTE: Approve / Reject logic fixed
 router.put('/deposits/:id', adminMiddleware, async (req, res) => {
   try {
     const { action } = req.body;
@@ -71,20 +72,25 @@ router.put('/deposits/:id', adminMiddleware, async (req, res) => {
     
     const isWithdraw = dep.type === 'withdraw';
 
+    // Pehle status update kar do
     await db.query('UPDATE deposit_requests SET status=? WHERE id=?', [action === 'approve' ? 'approved' : 'rejected', dep.id]);
     
     if (action === 'approve') {
       if (isWithdraw) {
+        // ✅ Withdraw Approve: Coins wallet.js mein request par pehle hi cut gaye the, toh bas history mein daalo
         await db.query('INSERT INTO transactions (user_id,type,amount,coin_type,description) VALUES (?,?,?,?,?)', [dep.user_id, 'withdraw', dep.amount, 'real', `📤 Withdrawal Approved ₹${dep.amount}`]);
       } else {
+        // ✅ Deposit Approve: User ko coins de do
         await db.query('UPDATE users SET coins=coins+? WHERE id=?', [dep.amount, dep.user_id]);
         await db.query('INSERT INTO transactions (user_id,type,amount,coin_type,description) VALUES (?,?,?,?,?)', [dep.user_id, 'deposit', dep.amount, 'real', `📥 Deposit Approved ₹${dep.amount}`]);
       }
     } else if (action === 'reject') {
       if (isWithdraw) {
+        // ✅ Withdraw Reject (REFUND): Kate hue coins dono jagah wapas de do
         await db.query('UPDATE users SET coins=coins+?, withdrawable_coins=withdrawable_coins+? WHERE id=?', [dep.amount, dep.amount, dep.user_id]);
         await db.query('INSERT INTO transactions (user_id,type,amount,coin_type,description) VALUES (?,?,?,?,?)', [dep.user_id, 'refund', dep.amount, 'real', `❌ Withdrawal Rejected - Refund ₹${dep.amount}`]);
       } else {
+        // ✅ Deposit Reject: Bas history log kar lo
         await db.query('INSERT INTO transactions (user_id,type,amount,coin_type,description) VALUES (?,?,?,?,?)', [dep.user_id, 'refund', dep.amount, 'real', `❌ Deposit Rejected ₹${dep.amount}`]);
       }
     }

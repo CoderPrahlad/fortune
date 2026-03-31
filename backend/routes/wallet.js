@@ -44,7 +44,7 @@ router.post('/deposit', authMiddleware, async (req, res) => {
   try {
     const { amount, payment_method, payment_proof } = req.body;
     
-    // 🚀 HIGHLIGHT: Min deposit limit 300 kar di hai
+    // 🚀 HIGHLIGHT: Min deposit limit ₹300 set as per new logic
     if (!amount || parseInt(amount) < 300) return res.json({ success:false, message:'Minimum deposit ₹300 hai bhai!' });
     
     // ✅ ID nikalne ke liye query result store kiya

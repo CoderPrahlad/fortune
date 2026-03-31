@@ -37,7 +37,9 @@ function useSound() {
   return { playFlip, playWin, playLose };
 }
 
+// ── High quality SVG card renderer ──
 function CardFace({ type, isAce }) {
+  // type: 'ace_spade' | 'king_club' | 'queen_heart' | 'joker'
   const cards = {
     ace_spade: { rank: 'A', suit: '♠', color: '#1a0040', accent: '#9900ff', suitColor: '#fff', label: 'EKKA' },
     king_club:  { rank: 'K', suit: '♣', color: '#001a00', accent: '#00cc44', suitColor: '#fff', label: 'BADSHA' },
@@ -56,15 +58,22 @@ function CardFace({ type, isAce }) {
           <stop offset="100%" stopColor="rgba(0,0,0,0.3)"/>
         </linearGradient>
       </defs>
+      {/* Card background */}
       <rect x="2" y="2" width="86" height="126" rx="10" fill={`url(#cg_${type})`} stroke={c.accent} strokeWidth="2"/>
       <rect x="2" y="2" width="86" height="126" rx="10" fill={`url(#sh_${type})`}/>
+      {/* Corner rank top-left */}
       <text x="10" y="22" fontSize="16" fontWeight="900" fill={c.suitColor} fontFamily="serif">{c.rank}</text>
       <text x="10" y="36" fontSize="14" fill={c.suitColor} fontFamily="serif">{c.suit}</text>
+      {/* Corner rank bottom-right (rotated) */}
       <text x="80" y="112" fontSize="16" fontWeight="900" fill={c.suitColor} fontFamily="serif" textAnchor="middle" transform="rotate(180,80,108)">{c.rank}</text>
       <text x="80" y="126" fontSize="14" fill={c.suitColor} fontFamily="serif" textAnchor="middle" transform="rotate(180,80,122)">{c.suit}</text>
+      {/* Center big suit */}
       <text x="45" y="78" fontSize="42" fill={c.suitColor} fontFamily="serif" textAnchor="middle" dominantBaseline="middle">{c.suit}</text>
+      {/* Center rank */}
       <text x="45" y="108" fontSize="18" fontWeight="900" fill={c.accent} fontFamily="serif" textAnchor="middle" letterSpacing="1">{c.rank}</text>
+      {/* Glow overlay for ace */}
       {type==='ace_spade' && <rect x="2" y="2" width="86" height="126" rx="10" fill="rgba(153,0,255,0.06)"/>}
+      {/* Label at bottom */}
       <text x="45" y="122" fontSize="7" fill={c.accent} fontFamily="sans-serif" textAnchor="middle" letterSpacing="2" fontWeight="700">{c.label}</text>
     </svg>
   );
@@ -91,6 +100,7 @@ function CardBack() {
   );
 }
 
+// Non-ace cards: random from these
 const NON_ACE_TYPES = ['king_club','queen_heart'];
 
 export default function Cards() {
@@ -125,6 +135,7 @@ export default function Cards() {
     const ace = d.ace_position;
     setAcePos(ace);
 
+    // Assign card types
     const types = [null,null,null];
     types[ace] = 'ace_spade';
     for (let i=0;i<3;i++) {
@@ -132,14 +143,17 @@ export default function Cards() {
     }
     setCardTypes(types);
 
+    // Flip picked card first
     const newFlipped = [false,false,false];
     newFlipped[idx] = true;
     setFlipped([...newFlipped]);
 
+    // Flip all after 700ms
     setTimeout(() => setFlipped([true,true,true]), 700);
 
     if (d.is_win) {
       setHint({ msg: '🏆 EKKA MILA! +🪙150!', cls: 'result-win' });
+      // Wait for all cards to flip (700ms) + extra 400ms, then show win
       setTimeout(() => {
         playWin();
         confetti();
@@ -174,6 +188,7 @@ export default function Cards() {
         </div>
 
         <div className="card card-game-outer">
+          {/* Bet Info */}
           <div className="card-bet-info">
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
               <div style={{textAlign:'center'}}>
@@ -187,8 +202,10 @@ export default function Cards() {
             </div>
           </div>
 
+          {/* Hint */}
           <div className={'card-hint'+(hint.cls?' '+hint.cls:'')}>{hint.msg}</div>
 
+          {/* Cards */}
           <div className="cards-stage">
             {[0,1,2].map(i => (
               <div key={i} className="card-wrap">
@@ -203,11 +220,13 @@ export default function Cards() {
                     </div>
                   </div>
                 </div>
+                {/* Card number BELOW card */}
                 <div className="card-num">{i+1}</div>
               </div>
             ))}
           </div>
 
+          {/* Buttons */}
           {picked !== null
             ? <button className="card-play-btn" onClick={reset}>🔄 PLAY AGAIN</button>
             : <button className="card-play-btn" disabled>🃏 TAP A CARD TO PLAY (🪙50)</button>

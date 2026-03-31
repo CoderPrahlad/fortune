@@ -94,7 +94,7 @@ export default function Home({ onDepositClick }) {
         })}
       </div>
 
-      {/* SEO Content Block */}
+      {/* SEO Content Block (Hidden via comments per your local version) */}
       {/* <div className="seo-content" style={{ padding: '20px', color: '#888', fontSize: '11px', textAlign: 'center', background: '#1a1a1a', margin: '30px 15px', borderRadius: '8px', border: '1px solid #333' }}>
         <h2 style={{ fontSize: '14px', color: '#ccc', marginBottom: '8px' }}>Best Online Casino & Color Prediction Game in India</h2>
         <p style={{ marginBottom: '8px', lineHeight: '1.4' }}>
@@ -109,7 +109,8 @@ export default function Home({ onDepositClick }) {
         <p style={{ marginTop: '10px', fontSize: '9px', color: '#555' }}>
           Keywords: Aviator Game, Color Prediction, Wingo Winning Tricks, Instant Withdrawal Casino, Earn Money Online.
         </p>
-      </div> */}
+      </div> 
+      */}
 
     </div>
   );
