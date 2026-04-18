@@ -7,7 +7,14 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type','Authorization'] }));
+app.use(cors({
+  origin: ['https://luckyfortunegame.vercel.app', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -21,12 +28,10 @@ app.use('/api/games', require('./routes/games'));
 app.use('/api/wallet', require('./routes/wallet'));
 app.use('/api/admin', require('./routes/admin'));
 
-// ✅ NAYA TELEGRAM WEBHOOK ROUTE YAHAN ADD KIYA HAI
 app.use('/api/telegram', require('./routes/telegram'));
 
 app.get('/api/health', (req, res) => res.json({ success:true, message:'🎰 Lucky Fortune API Running!' }));
 
-// ===== ADMIN CREATE (ek baar use karo phir hata do) =====
 app.get('/create-admin', async (req, res) => {
   try {
     const bcrypt = require('bcryptjs');
