@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://fortune-2-fm6d.onrender.com/api',
+  baseURL: 'https://fortune-2cfl.onrender.com/api',
   headers: { 'Content-Type': 'application/json' }
 });
 
